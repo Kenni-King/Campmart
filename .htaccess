@@ -1,0 +1,107 @@
+# Enable Rewrite Engine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /campmartv2/
+
+    # Redirect to HTTPS (uncomment when using SSL)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # API v1 routing - route all /api/v1/* requests to /api/v1/index.php
+    RewriteCond %{REQUEST_URI} ^/campmartv2/api/v1/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^api/v1/(.*)$ api/v1/index.php [L,QSA]
+
+    # QR Store routing - /qrstore/{id} -> api/qrstore/index.php
+    RewriteRule ^qrstore/([a-zA-Z0-9]+)$ api/qrstore/index.php?store=$1 [L,QSA]
+
+    # Remove trailing slashes
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)/$ /$1 [L,R=301]
+
+    # Product page with clean URLs
+    # Example: /product/iphone-13-pro-max -> product.php?slug=iphone-13-pro-max
+    RewriteRule ^product/([a-zA-Z0-9\-]+)$ product.php?slug=$1 [L,QSA]
+
+    # Service page with clean URLs
+    # Example: /service/maths-physics-tutoring -> service.php?slug=maths-physics-tutoring
+    RewriteRule ^service/([a-zA-Z0-9\-]+)$ service.php?slug=$1 [L,QSA]
+
+    # Category page
+    # Example: /category/electronics -> category.php?slug=electronics
+    RewriteRule ^category/([a-zA-Z0-9\-]+)$ category.php?slug=$1 [L,QSA]
+
+    # Seller profile
+    # Example: /seller/johndoe -> seller-profile.php?username=johndoe
+    RewriteRule ^seller/([a-zA-Z0-9\-_]+)$ seller-profile.php?username=$1 [L,QSA]
+
+    # Store page
+    # Example: /store/johndoe -> store.php?username=johndoe
+    RewriteRule ^store/([a-zA-Z0-9\-_]+)$ store.php?username=$1 [L,QSA]
+
+    # Prevent direct access to sensitive files
+    <FilesMatch "\.(env|log|sql|bak|md)$">
+        Order Allow,Deny
+        Deny from all
+    </FilesMatch>
+
+    # Protect includes directory
+    RewriteRule ^includes/ - [F,L]
+    RewriteRule ^database/ - [F,L]
+</IfModule>
+
+# Compression for better performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/pdf "access plus 1 month"
+    ExpiresByType text/x-javascript "access plus 1 month"
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # Prevent MIME sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Enable XSS protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # CORS headers for API v1
+    <FilesMatch "\.php$">
+        SetEnvIf Request_URI "^/campmartv2/api/v1/" CORS_REQUEST=1
+    </FilesMatch>
+    Header set Access-Control-Allow-Origin "*" env=CORS_REQUEST
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" env=CORS_REQUEST
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With" env=CORS_REQUEST
+    Header set Access-Control-Max-Age "86400" env=CORS_REQUEST
+</IfModule>
+
+# PHP Settings
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+</IfModule>
+
+# Custom Error Pages
+ErrorDocument 404 /campmartv2/404.php
+ErrorDocument 403 /campmartv2/403.php
+ErrorDocument 500 /campmartv2/500.php
